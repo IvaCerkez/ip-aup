@@ -1,85 +1,137 @@
 const express = require('express');
 const router = express.Router();
+const mysql = require('mysql2/promise');
+
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '', 
+  database: 'kategorije'
+});
 
 /**
  * @swagger
  * tags:
- *   name: Users
- *   description: API za korisnike
+ *   name: Proizvodi
+ *   description: API za upravljanje proizvodima i kategorijama
  */
 
 /**
  * @swagger
- * /api/users:
+ * /api/proizvodi/kategorije:
  *   get:
- *     summary: Dohvati listu korisnika
- *     tags: [Users]
+ *     summary: Dohvati sve kategorije
+ *     tags: [Proizvodi]
  *     responses:
  *       200:
- *         description: Lista korisnika
+ *         description: Lista kategorija
  */
-router.get('/', (req, res) => {
-  // Ovdje bi inače dohvat korisnika iz baze
-  res.json([
-    { id: 1, ime: 'Ivan', email: 'ivan@example.com' },
-    { id: 2, ime: 'Ana', email: 'ana@example.com' }
-  ]);
+router.get('/kategorije', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, naziv FROM kategorije');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Greška kod dohvaćanja kategorija' });
+  }
 });
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/proizvodi:
  *   get:
- *     summary: Dohvati korisnika po ID-u
- *     tags: [Users]
+ *     summary: Dohvati sve proizvode (moguće filtriranje po kategoriji i pretrazi)
+ *     tags: [Proizvodi]
+ *     parameters:
+ *       - in: query
+ *         name: kategorija
+ *         schema:
+ *           type: integer
+ *         description: ID kategorije
+ *       - in: query
+ *         name: pretraga
+ *         schema:
+ *           type: string
+ *         description: Dio naziva proizvoda za pretragu
+ *     responses:
+ *       200:
+ *         description: Lista proizvoda
+ */
+router.get('/', async (req, res) => {
+  const { pretraga, kategorija } = req.query;
+
+  let query = `
+    SELECT p.id, p.naziv, p.sastojci, p.uputa, p.slikaUrl, k.naziv AS kategorija
+    FROM proizvodi p
+    JOIN kategorije k ON p.kategorija_id = k.id
+  `;
+
+  const queryParams = [];
+
+  if (kategorija) {
+    query += ' WHERE k.id = ?';
+    queryParams.push(kategorija);
+  }
+
+  if (pretraga) {
+    query += queryParams.length > 0 ? ' AND p.naziv LIKE ?' : ' WHERE p.naziv LIKE ?';
+    queryParams.push(`%${pretraga}%`);
+  }
+
+  try {
+    const [rows] = await pool.query(query, queryParams);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Greška kod dohvaćanja proizvoda' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/proizvodi/{id}:
+ *   get:
+ *     summary: Dohvati jedan proizvod po ID-u
+ *     tags: [Proizvodi]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID korisnika
  *     responses:
  *       200:
- *         description: Podaci korisnika
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: integer
- *                 ime:
- *                   type: string
- *                 email:
- *                   type: string
+ *         description: Podaci o proizvodu
  *       404:
- *         description: Korisnik nije pronađen
+ *         description: Proizvod nije pronađen
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
-  if (isNaN(id)) {
-    return res.status(400).json({ error: 'Neispravan ID korisnika' });
-  }
+  if (isNaN(id)) return res.status(400).json({ error: 'Neispravan ID proizvoda' });
 
-  const korisnici = [
-    { id: 1, ime: 'Ivan', email: 'ivan@example.com' },
-    { id: 2, ime: 'Ana', email: 'ana@example.com' }
-  ];
+  try {
+    const [rows] = await pool.query(`
+      SELECT p.id, p.naziv, p.sastojci, p.uputa, p.slikaUrl, k.naziv AS kategorija
+      FROM proizvodi p
+      JOIN kategorije k ON p.kategorija_id = k.id
+      WHERE p.id = ?
+    `, [id]);
 
-  const korisnik = korisnici.find(k => k.id === id);
-  if (!korisnik) {
-    return res.status(404).json({ message: 'Korisnik nije pronađen' });
+    if (rows.length === 0) return res.status(404).json({ message: 'Proizvod nije pronađen' });
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Greška kod dohvaćanja proizvoda' });
   }
-  res.json(korisnik);
 });
 
 /**
  * @swagger
- * /api/users:
+ * /api/proizvodi:
  *   post:
- *     summary: Dodaj novog korisnika
- *     tags: [Users]
+ *     summary: Dodaj novi proizvod
+ *     tags: [Proizvodi]
  *     requestBody:
  *       required: true
  *       content:
@@ -87,44 +139,52 @@ router.get('/:id', (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               ime:
+ *               naziv:
  *                 type: string
- *               email:
+ *               sastojci:
  *                 type: string
- *               lozinka:
+ *               uputa:
  *                 type: string
- *             required:
- *               - ime
- *               - email
- *               - lozinka
+ *               kategorija_id:
+ *                 type: integer
+ *               slikaUrl:
+ *                 type: string
  *     responses:
  *       201:
- *         description: Korisnik uspješno dodan
- *       400:
- *         description: Nedostaju obavezna polja
+ *         description: Proizvod uspješno dodan
  */
-router.post('/', (req, res) => {
-  const { ime, email, lozinka } = req.body;
-  if (!ime || !email || !lozinka) {
-    return res.status(400).json({ error: 'Sva polja su obavezna: ime, email, lozinka' });
+router.post('/', async (req, res) => {
+  const { naziv, sastojci, uputa, kategorija_id, slikaUrl } = req.body;
+
+  if (!naziv || !sastojci || !uputa || !kategorija_id) {
+    return res.status(400).json({ error: 'Sva polja su obavezna: naziv, sastojci, uputa, kategorija_id' });
   }
-  // Ovdje bi se korisnik dodao u bazu (dummy response)
-  res.status(201).json({ message: 'Korisnik uspješno dodan', korisnik: { ime, email } });
+
+  try {
+    const [result] = await pool.query(`
+      INSERT INTO proizvodi (naziv, sastojci, uputa, kategorija_id, slikaUrl)
+      VALUES (?, ?, ?, ?, ?)
+    `, [naziv, sastojci, uputa, kategorija_id, slikaUrl || null]);
+
+    res.status(201).json({ message: 'Proizvod uspješno dodan', id: result.insertId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Greška prilikom dodavanja proizvoda' });
+  }
 });
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/proizvodi/{id}:
  *   put:
- *     summary: Ažuriraj korisnika po ID-u
- *     tags: [Users]
+ *     summary: Ažuriraj postojeći proizvod
+ *     tags: [Proizvodi]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID korisnika
  *     requestBody:
  *       required: true
  *       content:
@@ -132,80 +192,78 @@ router.post('/', (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               ime:
+ *               naziv:
  *                 type: string
- *               email:
+ *               sastojci:
  *                 type: string
- *               lozinka:
+ *               uputa:
  *                 type: string
- *             required:
- *               - ime
- *               - email
- *               - lozinka
+ *               kategorija_id:
+ *                 type: integer
+ *               slikaUrl:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Korisnik uspješno ažuriran
- *       400:
- *         description: Neispravan ID ili nedostaju obavezna polja
+ *         description: Proizvod uspješno ažuriran
  *       404:
- *         description: Korisnik nije pronađen
+ *         description: Proizvod nije pronađen
  */
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
-  const { ime, email, lozinka } = req.body;
+  const { naziv, sastojci, uputa, kategorija_id, slikaUrl } = req.body;
 
-  if (isNaN(id)) {
-    return res.status(400).json({ error: 'Neispravan ID korisnika' });
-  }
-  if (!ime || !email || !lozinka) {
-    return res.status(400).json({ error: 'Sva polja su obavezna: ime, email, lozinka' });
+  if (isNaN(id)) return res.status(400).json({ error: 'Neispravan ID proizvoda' });
+  if (!naziv || !sastojci || !uputa || !kategorija_id) {
+    return res.status(400).json({ error: 'Sva polja su obavezna: naziv, sastojci, uputa, kategorija_id' });
   }
 
-  // Dummy provjera postoji li korisnik (primjer)
-  const korisnici = [1, 2]; 
-  if (!korisnici.includes(id)) {
-    return res.status(404).json({ message: 'Korisnik nije pronađen' });
-  }
+  try {
+    const [result] = await pool.query(`
+      UPDATE proizvodi
+      SET naziv = ?, sastojci = ?, uputa = ?, kategorija_id = ?, slikaUrl = ?
+      WHERE id = ?
+    `, [naziv, sastojci, uputa, kategorija_id, slikaUrl || null, id]);
 
-  // Ovdje bi se korisnik ažurirao u bazi
-  res.json({ message: 'Korisnik uspješno ažuriran' });
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Proizvod nije pronađen' });
+
+    res.json({ message: 'Proizvod uspješno ažuriran' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Greška prilikom ažuriranja proizvoda' });
+  }
 });
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/proizvodi/{id}:
  *   delete:
- *     summary: Obriši korisnika po ID-u
- *     tags: [Users]
+ *     summary: Obriši proizvod po ID-u
+ *     tags: [Proizvodi]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID korisnika
  *     responses:
  *       200:
- *         description: Korisnik uspješno obrisan
- *       400:
- *         description: Neispravan ID
+ *         description: Proizvod uspješno obrisan
  *       404:
- *         description: Korisnik nije pronađen
+ *         description: Proizvod nije pronađen
  */
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
-  if (isNaN(id)) {
-    return res.status(400).json({ error: 'Neispravan ID korisnika' });
-  }
+  if (isNaN(id)) return res.status(400).json({ error: 'Neispravan ID proizvoda' });
 
-  // Dummy provjera postoji li korisnik (primjer)
-  const korisnici = [1, 2];
-  if (!korisnici.includes(id)) {
-    return res.status(404).json({ message: 'Korisnik nije pronađen' });
-  }
+  try {
+    const [result] = await pool.query(`DELETE FROM proizvodi WHERE id = ?`, [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Proizvod nije pronađen' });
 
-  // Ovdje bi se korisnik obrisao iz baze
-  res.json({ message: 'Korisnik uspješno obrisan' });
+    res.json({ message: 'Proizvod uspješno obrisan' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Greška prilikom brisanja proizvoda' });
+  }
 });
 
 module.exports = router;
