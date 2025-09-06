@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
 
-// 🔹 Povezivanje na MySQL bazu
+
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
@@ -10,7 +10,7 @@ const pool = mysql.createPool({
   database: 'kategorije'      
 });
 
-// 🔹 1️⃣ Dobavi sve kategorije
+
 router.get('/kategorije', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT id, naziv FROM kategorije');
@@ -21,7 +21,7 @@ router.get('/kategorije', async (req, res) => {
   }
 });
 
-// 🔹 2️⃣ Dobavi sve proizvode (filtriranje po kategoriji i pretrazi)
+
 router.get('/', async (req, res) => {
   const { pretraga, kategorija } = req.query;
 
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 🔹 3️⃣ Dobavi jedan proizvod po ID-u
+
 router.get('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: 'Neispravan ID proizvoda' });
@@ -74,7 +74,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 🔹 4️⃣ Dodaj novi proizvod
+
 router.post('/', async (req, res) => {
   const { naziv, sastojci, uputa, kategorija_id, slikaUrl } = req.body;
 
@@ -95,7 +95,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 🔹 5️⃣ Update proizvoda
+
 router.put('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   const { naziv, sastojci, uputa, kategorija_id, slikaUrl } = req.body;
@@ -121,7 +121,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 🔹 6️⃣ Obriši proizvod
+
 router.delete('/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: 'Neispravan ID proizvoda' });
