@@ -3,7 +3,7 @@ import axios from 'axios'
 const API_URL = 'http://localhost:5000/api/proizvodi'
 const KATEGORIJE_URL = 'http://localhost:5000/api/proizvodi/kategorije'
 
-// Proizvodi
+
 export const getProizvodi = params => {
   return axios.get(API_URL, { params })
 }
@@ -24,7 +24,7 @@ export const deleteProizvod = id => {
   return axios.delete(`${API_URL}/${id}`)
 }
 
-// ✅ Novo: Kategorije
+
 export const getKategorije = () => {
   return axios.get(KATEGORIJE_URL)
 }
