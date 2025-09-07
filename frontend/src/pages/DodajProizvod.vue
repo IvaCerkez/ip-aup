@@ -12,7 +12,7 @@
 
         <v-form ref="form" v-model="isValid" lazy-validation>
           <v-row>
-            <!-- Naziv -->
+           
             <v-col cols="12">
               <v-text-field
                 v-model="proizvod.naziv"
@@ -22,7 +22,7 @@
               />
             </v-col>
 
-            <!-- Sastojci -->
+            
             <v-col cols="12">
               <v-textarea
                 v-model="proizvod.sastojci"
@@ -32,7 +32,7 @@
               />
             </v-col>
 
-            <!-- Uputa -->
+           
             <v-col cols="12">
               <v-textarea
                 v-model="proizvod.uputa"
@@ -42,7 +42,7 @@
               />
             </v-col>
 
-            <!-- Kategorija -->
+          
             <v-col cols="12">
               <v-select
                 v-model="proizvod.kategorija"
@@ -55,7 +55,7 @@
               />
             </v-col>
 
-            <!-- URL slike -->
+        
             <v-col cols="12">
               <v-text-field
                 v-model="proizvod.slikaUrl"
@@ -66,7 +66,7 @@
               />
             </v-col>
 
-            <!-- Dugmad -->
+          
             <v-col class="text-center" cols="12">
               <v-btn color="#FFB38E" @click="spremiProizvod">
                 Spremi
@@ -92,7 +92,7 @@ const proizvod = ref({
   sastojci: '',
   uputa: '',
   kategorija: '',
-  slikaUrl: '' // novo polje za URL slike
+  slikaUrl: '' 
 })
 
 const kategorije = [
