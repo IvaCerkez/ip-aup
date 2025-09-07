@@ -6,7 +6,7 @@ const options = {
       version: '1.0.0',
     },
   },
-  apis: ['./routes/proizvodi.js', './routes/user.js'],  // oba fajla sa Swagger komentarima
+  apis: ['./routes/proizvodi.js', './routes/user.js'],  
 };
 
 const swaggerSpec = require('swagger-jsdoc')(options);
