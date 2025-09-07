@@ -3,14 +3,14 @@
     <h1 style="color: white;">Detalji proizvoda</h1>
     <br><br>
     <v-row>
-      <!-- Slika proizvoda -->
+      
       <v-col cols="12" md="6">
         <v-card style="background-color: #DE8F5F;">
           <v-img height="400px" :src="proizvod.slikaUrl" />
         </v-card>
       </v-col>
 
-      <!-- Podaci o proizvodu -->
+      
       <v-col cols="12" md="6">
         <v-card style="background-color: #DE8F5F; color: white;">
           <v-card-title>{{ proizvod.naziv }}</v-card-title>
@@ -28,7 +28,7 @@
       </v-col>
     </v-row>
 
-    <!-- Loader -->
+    
     <v-progress-circular
       v-if="loading"
       class="mt-3"
@@ -50,7 +50,7 @@ const id = route.params.id
 const proizvod = ref({})
 const loading = ref(false)
 
-// Dohvati detalje proizvoda
+
 const fetchProizvodi = async () => {
   loading.value = true
   try {
@@ -64,7 +64,7 @@ const fetchProizvodi = async () => {
   }
 }
 
-// Brisanje proizvoda
+
 const obrisiProizvod = async () => {
   if (!confirm('Jeste li sigurni da želite obrisati ovaj proizvod?')) return
   try {
