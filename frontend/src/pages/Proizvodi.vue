@@ -7,7 +7,7 @@
 
     <v-main>
       <v-container>
-        <!-- Pretraga -->
+       
         <v-text-field
           v-model="search"
           clearable
@@ -16,7 +16,7 @@
           @input="fetchProizvodi"
         />
 
-        <!-- Filter po kategoriji -->
+        
         <v-select
           v-model="selectedKategorija"
           class="mb-4"
@@ -29,7 +29,7 @@
           @update:model-value="fetchProizvodi"
         />
 
-        <!-- Dugme za dodavanje novog proizvoda -->
+      
         <v-btn
           class="mb-4"
           color="#FFCF9D"
@@ -39,7 +39,7 @@
           Dodaj novi proizvod
         </v-btn>
 
-        <!-- Prikaz proizvoda -->
+        
         <v-row>
           <v-col
             v-for="item in paginatedProizvodi"
@@ -59,7 +59,7 @@
               <v-card-title class="text-h6">{{ item.naziv }}</v-card-title>
               <v-card-subtitle>{{ item.kategorija }}</v-card-subtitle>
 
-              <!-- Sastojci i upute uklonjeni iz liste -->
+              
 
               <v-card-actions>
                 <v-btn
@@ -73,7 +73,7 @@
           </v-col>
         </v-row>
 
-        <!-- Pagiranje -->
+        
         <v-row v-if="totalPages > 1" justify="center">
           <v-pagination
             v-model="currentPage"
@@ -100,7 +100,7 @@ const itemsPerPage = 8
 const currentPage = ref(1)
 const loading = ref(false)
 
-// Funkcija za dohvat proizvoda
+
 const fetchProizvodi = async () => {
   loading.value = true
   console.log('Šaljem na backend:', {
@@ -122,7 +122,7 @@ const fetchProizvodi = async () => {
   }
 }
 
-// Funkcija za dohvat kategorija
+
 const fetchKategorije = async () => {
   try {
     const res = await getKategorije()
@@ -133,18 +133,18 @@ const fetchKategorije = async () => {
   }
 }
 
-// Ukupan broj stranica za paginaciju
+
 const totalPages = computed(() => {
   return Math.ceil(proizvodi.value.length / itemsPerPage)
 })
 
-// Paginated proizvodi
+
 const paginatedProizvodi = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   return proizvodi.value.slice(start, start + itemsPerPage)
 })
 
-// Poziv funkcija prilikom montaže
+
 onMounted(() => {
   fetchProizvodi()
   fetchKategorije()
